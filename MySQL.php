@@ -1,5 +1,6 @@
 <?php
-class cpanelAPI {
+
+class CpanelAPI {
     public $version = '2.0';
     public $ssl = 1;
     public $port = 2083;
@@ -8,7 +9,7 @@ class cpanelAPI {
     public $user;
     public $json = '';
 
-    protected $scope; 
+    protected $scope;
     protected $api;
     protected $auth;
     protected $pass;
@@ -19,12 +20,11 @@ class cpanelAPI {
     protected $requestUrl;
     protected $eno;
     protected $emes;
-    protected $token = FALSE;
+    protected $token = false;
     protected $httpMethod = 'GET';
     protected $postData = '';
 
-    function __construct($user, $pass, $server, $secret = FALSE)
-    {
+    public function __construct($user, $pass, $server, $secret = false) {
         $this->user = $user;
         $this->pass = $pass;
         $this->server = $server;
@@ -34,14 +34,13 @@ class cpanelAPI {
         }
     }
 
-    protected function set2Fa(){
+    protected function set2Fa() {
         require 'otphp/lib/otphp.php';
         $totp = new \OTPHP\TOTP($this->secret);
         $this->token = $totp->now();
     }
 
-    public function __get($name)
-    {
+    public function __get($name) {
         switch (strtolower($name)) {
             case 'get':
                 $this->httpMethod = 'GET';
@@ -61,15 +60,13 @@ class cpanelAPI {
         return $this;
     }
 
-    
-    protected function setApi($api){
+    protected function setApi($api) {
         $this->api = $api;
         $this->setMethod();
         return $this;
     }
 
-    
-    protected function setMethod(){
+    protected function setMethod() {
         switch ($this->api) {
             case 'uapi':
                 $this->method = '/execute/';
@@ -83,20 +80,19 @@ class cpanelAPI {
         return $this;
     }
 
-    
-    public function __toString(){
+    public function __toString() {
         return $this->json;
     }
 
-    public function __call($name, $arguments){
-        if (count($arguments) < 1 || !is_array($arguments[0]))
+    public function __call($name, $arguments) {
+        if (count($arguments) < 1 || !is_array($arguments[0])) {
             $arguments[0] = [];
+        }
         $this->json = $this->APIcall($name, $arguments[0]);
         return json_decode($this->json);
     }
 
-    
-    protected function APIcall($name, $arguments){
+    protected function APIcall($name, $arguments) {
         $this->auth = base64_encode($this->user . ":" . $this->pass);
         $this->type = $this->ssl == 1 ? "https://" : "http://";
         $this->requestUrl = $this->type . $this->server . ':' . $this->port . $this->method;
@@ -113,25 +109,25 @@ class cpanelAPI {
             default:
                 throw new Exception('$this->api is not set or is incorrectly set. The only available options are \'uapi\' or \'api2\'');
         }
-        if($this->httpMethod == 'GET') {
+        if ($this->httpMethod == 'GET') {
             $this->requestUrl .= http_build_query($arguments);
         }
-        if($this->httpMethod == 'POST'){
+        if ($this->httpMethod == 'POST') {
             $this->postData = $arguments;
         }
 
-        return $this->curl_request($this->requestUrl);
+        return $this->curlRequest($this->requestUrl);
     }
 
-    protected function curl_request($url){
+    protected function curlRequest($url) {
         $httpHeaders = array("Authorization: Basic " . $this->auth);
         if ($this->token) {
             $httpHeaders[] = "X-CPANEL-OTP: " . $this->token;
         }
         $ch = curl_init();
-        if($this->httpMethod == 'POST'){
+        if ($this->httpMethod == 'POST') {
             $httpHeaders[] = "Content-type: multipart/form-data";
-            curl_setopt($ch,CURLOPT_POSTFIELDS, $this->postData);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->postData);
         }
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
@@ -141,7 +137,7 @@ class cpanelAPI {
         curl_setopt($ch, CURLOPT_TIMEOUT, 100020);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 
-        $content = $this->curl_exec_follow($ch, $this->maxredirect);
+        $content = $this->curlExecFollow($ch, $this->maxredirect);
         $this->eno = curl_errno($ch);
         $this->emes = curl_error($ch);
 
@@ -150,8 +146,8 @@ class cpanelAPI {
         return $content;
     }
 
-    protected function curl_exec_follow($ch, &$maxredirect = null){
-        $user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.5)"."Gecko/20041107 Firefox/1.0";
+    protected function curlExecFollow($ch, &$maxredirect = null) {
+        $user_agent = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.5)" . "Gecko/20041107 Firefox/1.0";
         curl_setopt($ch, CURLOPT_USERAGENT, $user_agent);
         $mr = $maxredirect === null ? 5 : intval($maxredirect);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, $mr > 0);
@@ -161,15 +157,14 @@ class cpanelAPI {
         return curl_exec($ch);
     }
 
-    public function getLastRequest(){
+    public function getLastRequest() {
         return $this->requestUrl;
     }
 
-    public function getError(){
+    public function getError() {
         if (!empty($this->eno)) {
             return ['no' => $this->eno, 'message' => $this->emes];
         }
-        return FALSE;
+        return false;
     }
-    
 }
