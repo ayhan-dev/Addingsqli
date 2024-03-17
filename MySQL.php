@@ -51,8 +51,8 @@ class CpanelAPI {
             case 'api2':
                 $this->setApi('api2');
                 break;
-            case 'uapi':
-                $this->setApi('uapi');
+            case 'api':
+                $this->setApi('api');
                 break;
             default:
                 $this->scope = $name;
@@ -68,7 +68,7 @@ class CpanelAPI {
 
     protected function setMethod() {
         switch ($this->api) {
-            case 'uapi':
+            case 'api':
                 $this->method = '/execute/';
                 break;
             case 'api2':
@@ -97,7 +97,7 @@ class CpanelAPI {
         $this->type = $this->ssl == 1 ? "https://" : "http://";
         $this->requestUrl = $this->type . $this->server . ':' . $this->port . $this->method;
         switch ($this->api) {
-            case 'uapi':
+            case 'api':
                 $this->requestUrl .= ($this->scope != '' ? $this->scope . "/" : '') . $name . '?';
                 break;
             case 'api2':
